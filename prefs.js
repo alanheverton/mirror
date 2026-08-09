@@ -56,7 +56,50 @@ export default class MirrorPreferences extends ExtensionPreferences {
 
     const virtualDisplayRow = new Adw.SwitchRow({
       title: _('Virtual Display'),
-      subtitle: _('Whether to mirror as a virtual display'),
+      subtitle: _('Open a landscape desktop display instead of the phone screen'),
+    });
+
+    const virtualDisplayWidthRow = new Adw.SpinRow({
+      title: _('Desktop Width'),
+      subtitle: _('Width of the virtual desktop display'),
+      adjustment: new Gtk.Adjustment({
+        lower: 320,
+        upper: 7680,
+        value: 1920,
+        step_increment: 16,
+      }),
+    });
+
+    const virtualDisplayHeightRow = new Adw.SpinRow({
+      title: _('Desktop Height'),
+      subtitle: _('Height of the virtual desktop display'),
+      adjustment: new Gtk.Adjustment({
+        lower: 240,
+        upper: 4320,
+        value: 1080,
+        step_increment: 16,
+      }),
+    });
+
+    const virtualDisplayDpiRow = new Adw.SpinRow({
+      title: _('Desktop DPI'),
+      subtitle: _('Lower values make the desktop interface larger'),
+      adjustment: new Gtk.Adjustment({
+        lower: 80,
+        upper: 640,
+        value: 200,
+        step_increment: 10,
+      }),
+    });
+
+    const virtualDisplayFlexRow = new Adw.SwitchRow({
+      title: _('Fit Virtual Display to Window'),
+      subtitle: _('Continuously resize the Android display with the scrcpy window'),
+    });
+
+    const forceDesktopModeRow = new Adw.SwitchRow({
+      title: _('Force Desktop Mode'),
+      subtitle: _('Ask Android to use its desktop interface on the virtual display'),
     });
 
     const keepPhoneAwakeRow = new Adw.SwitchRow({
@@ -104,6 +147,22 @@ export default class MirrorPreferences extends ExtensionPreferences {
       label: _('px'),
       css_classes: ['dim-label'],
     }));
+
+    const videoMaxFpsRow = new Adw.SpinRow({
+      title: _('Video Max FPS'),
+      subtitle: _('Higher values make motion smoother but use more resources'),
+      adjustment: new Gtk.Adjustment({
+        lower: 15,
+        upper: 120,
+        value: 60,
+        step_increment: 5,
+      }),
+    });
+
+    const videoH265Row = new Adw.SwitchRow({
+      title: _('Use H.265 / HEVC'),
+      subtitle: _('Better compression and quality; may use more device resources'),
+    });
 
     const mirrorAudioRow = new Adw.ExpanderRow({
       title: _('Mirror Audio'),
@@ -171,6 +230,10 @@ export default class MirrorPreferences extends ExtensionPreferences {
     settings.bind('video-bit-rate', videoBitRateRow, 'value', Gio.SettingsBindFlags.DEFAULT);
     mirrorVideoRow.add_row(videoMaxSizeRow);
     settings.bind('video-max-size', videoMaxSizeRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+    mirrorVideoRow.add_row(videoMaxFpsRow);
+    settings.bind('video-max-fps', videoMaxFpsRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+    mirrorVideoRow.add_row(videoH265Row);
+    settings.bind('video-h265', videoH265Row, 'active', Gio.SettingsBindFlags.DEFAULT);
     mirrorAudioRow.add_row(audioBitRateRow);
     settings.bind('audio-bit-rate', audioBitRateRow, 'value', Gio.SettingsBindFlags.DEFAULT);
     mirrorAudioRow.add_row(audioBufferRow);
@@ -182,6 +245,16 @@ export default class MirrorPreferences extends ExtensionPreferences {
 
     behaviorGroup.add(virtualDisplayRow);
     settings.bind('virtual-display', virtualDisplayRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+    behaviorGroup.add(virtualDisplayWidthRow);
+    settings.bind('virtual-display-width', virtualDisplayWidthRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+    behaviorGroup.add(virtualDisplayHeightRow);
+    settings.bind('virtual-display-height', virtualDisplayHeightRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+    behaviorGroup.add(virtualDisplayDpiRow);
+    settings.bind('virtual-display-dpi', virtualDisplayDpiRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+    behaviorGroup.add(virtualDisplayFlexRow);
+    settings.bind('virtual-display-flex', virtualDisplayFlexRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+    behaviorGroup.add(forceDesktopModeRow);
+    settings.bind('force-desktop-mode', forceDesktopModeRow, 'active', Gio.SettingsBindFlags.DEFAULT);
     behaviorGroup.add(keepPhoneAwakeRow);
     settings.bind('keep-phone-awake', keepPhoneAwakeRow, 'active', Gio.SettingsBindFlags.DEFAULT);
     behaviorGroup.add(turnPhoneScreenOffRow);

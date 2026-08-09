@@ -84,6 +84,10 @@ const MirrorToggle = GObject.registerClass(
       this.menu.addMenuItem(this._deviceSection);
       this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
+      this.menu.addAction(_("Pair Device via QR Code"), () => {
+        void this._showPairingDialog("");
+      });
+
       this.menu.addAction(_("Mirror Preferences"), () => {
         this._extension.openPreferences();
       });
@@ -98,7 +102,7 @@ const MirrorToggle = GObject.registerClass(
       }, this);
     }
 
-    async _showPairingDialog(address) {
+    async _showPairingDialog(address = "") {
       if (this._pairingDialog) {
         this._pairingDialog.close();
       }
@@ -147,7 +151,7 @@ const MirrorToggle = GObject.registerClass(
 
       const ipEntry = new St.Entry({
         hint_text: _("IP:Port (e.g., 192.168.1.5:38495)"),
-        text: baseIp + ":",
+        text: baseIp ? `${baseIp}:` : "",
         style: "border-radius: 8px; padding: 6px; margin-right: 12px;",
         can_focus: true,
       });
@@ -675,7 +679,32 @@ const MirrorToggle = GObject.registerClass(
         }
 
         if (settings.get_boolean('virtual-display')) {
-          args.push("--new-display");
+          const width = Math.max(320, settings.get_int("virtual-display-width"));
+          const height = Math.max(240, settings.get_int("virtual-display-height"));
+          const dpi = Math.max(80, settings.get_int("virtual-display-dpi"));
+
+          // Do not use bare --new-display here: scrcpy would inherit the
+          // phone's portrait resolution and the desktop would not fit the PC.
+          args.push(`--new-display=${width}x${height}/${dpi}`);
+          args.push("--display-ime-policy=local");
+
+          if (settings.get_boolean('virtual-display-flex')) {
+            args.push("--flex-display");
+          }
+
+          if (settings.get_boolean('force-desktop-mode')) {
+            await this._runCommand([
+              this._adbPath,
+              "-s",
+              serial,
+              "shell",
+              "settings",
+              "put",
+              "global",
+              "force_desktop_mode_on_external_displays",
+              "1",
+            ]);
+          }
         }
 
         if (settings.get_boolean('keep-phone-awake')) {
@@ -687,15 +716,21 @@ const MirrorToggle = GObject.registerClass(
         }
 
         if (settings.get_boolean('mirror-video')) {
-          args.push(`--video-bit-rate=${settings.get_uint("video-bit-rate").toString()}M`);
-          args.push(`--max-size=${settings.get_uint("video-max-size").toString()}`);
+          args.push(`--video-bit-rate=${settings.get_int("video-bit-rate").toString()}M`);
+          const maxSize = settings.get_int("video-max-size");
+          if (maxSize > 0) args.push(`--max-size=${maxSize}`);
+          const maxFps = settings.get_int("video-max-fps");
+          if (maxFps > 0) args.push(`--max-fps=${maxFps}`);
+          if (settings.get_boolean('video-h265')) {
+            args.push("--video-codec=h265");
+          }
         } else {
           args.push("--no-video");
         }
 
         if (settings.get_boolean('mirror-audio')) {
-          args.push(`--audio-bit-rate=${settings.get_uint("audio-bit-rate").toString()}K`);
-          args.push(`--audio-buffer=${settings.get_uint("audio-buffer").toString()}`);
+          args.push(`--audio-bit-rate=${settings.get_int("audio-bit-rate").toString()}K`);
+          args.push(`--audio-buffer=${settings.get_int("audio-buffer").toString()}`);
         } else {
           args.push("--no-audio");
         }
@@ -765,6 +800,15 @@ const MirrorToggle = GObject.registerClass(
         this._pairingPollTimeoutId = null;
       }
       this._pairingActive = false;
+
+      // Do not leave an old scrcpy window alive when GNOME reloads the
+      // extension. Otherwise a process started by the previous code path can
+      // remain visible and make the new settings appear to be ignored.
+      if (this._activeScrcpyProc) {
+        this._activeScrcpyProc.force_exit();
+        this._activeScrcpyProc = null;
+      }
+      this._activeSerial = null;
 
       if (this._pairingDialog) {
         this._pairingDialog.disconnectObject(this);

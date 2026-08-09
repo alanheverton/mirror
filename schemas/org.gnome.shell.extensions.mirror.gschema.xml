@@ -10,6 +10,21 @@
         <key name="virtual-display" type="b">
             <default>false</default>
         </key>
+        <key name="virtual-display-width" type="i">
+            <default>1920</default>
+        </key>
+        <key name="virtual-display-height" type="i">
+            <default>1080</default>
+        </key>
+        <key name="virtual-display-dpi" type="i">
+            <default>200</default>
+        </key>
+        <key name="virtual-display-flex" type="b">
+            <default>true</default>
+        </key>
+        <key name="force-desktop-mode" type="b">
+            <default>true</default>
+        </key>
         <key name="keep-phone-awake" type="b">
             <default>true</default>
         </key>
@@ -24,6 +39,12 @@
         </key>
         <key name="video-max-size" type="i">
             <default>0</default>
+        </key>
+        <key name="video-max-fps" type="i">
+            <default>60</default>
+        </key>
+        <key name="video-h265" type="b">
+            <default>false</default>
         </key>
         <key name="mirror-audio" type="b">
             <default>true</default>
